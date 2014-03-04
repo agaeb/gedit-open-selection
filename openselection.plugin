@@ -1,0 +1,9 @@
+[Plugin]
+Loader=python
+Module=openselection
+IAge=3
+Name=Open Selection
+Description=Use the selection as filename to be opened
+Authors=Andreas Gaeb <a.gaeb@web.de>
+Copyright=Copyright © 2014 Andreas Gaeb
+Version=3.0.0
