@@ -23,21 +23,26 @@ from gi.repository import GObject, Gtk, Gedit, Gio
 import os.path
 import glob
 
-# menu entry below Open in File menu
-UI_XML = """
-<ui>
-  <menubar name="MenuBar">
-    <menu name="FileMenu" action="File">
-      <placeholder name="FileOps_2">
-        <menuitem name="Open Selection" action="OpenSelection"/>
-      </placeholder>
-    </menu>
-  </menubar>
-</ui>
-"""
+class OpenSelectionAppActivatable(GObject.Object, Gedit.AppActivatable):
+
+    app = GObject.Property(type=Gedit.App)
+
+    def __init__(self):
+        GObject.Object.__init__(self)
+
+    def do_activate(self):
+        self.menu_ext = self.extend_menu("file-section")
+        item = Gio.MenuItem.new( ("Op_en Selection"), "win.OpenSelection")
+        self.menu_ext.append_menu_item(item)
+
+        self.app.add_accelerator("<Primary><Shift>O", "win.OpenSelection", None)
+
+    def do_deactivate(self):
+        self.menu_ext = None
+        self.app.remove_accelerator("win.OpenSelection", None)
 
 
-class OpenSelectionPlugin(GObject.Object, Gedit.WindowActivatable):
+class OpenSelectionWindowActivatable(GObject.Object, Gedit.WindowActivatable):
     """Open the currently selected path in a new tab
 
     Consider the currently selected text to be the name of a (local) file
@@ -52,31 +57,13 @@ class OpenSelectionPlugin(GObject.Object, Gedit.WindowActivatable):
     def __init__(self):
         GObject.Object.__init__(self)
 
-    def _add_ui(self):
-        """add menu entry"""
-        manager = self.window.get_ui_manager()
-        self._actions = Gtk.ActionGroup("GeditOpenSelectionPluginActions")
-        self._actions.add_actions([
-            ('OpenSelection', Gtk.STOCK_FILE, "Op_en Selection",
-                "<shift><control>O",
-                "Open the currently selected path in a new tab",
-                self.on_open_selection_activate),
-        ])
-        manager.insert_action_group(self._actions)
-        self._ui_merge_id = manager.add_ui_from_string(UI_XML)
-        manager.ensure_update()
-
-    def _remove_ui(self):
-        manager = self.window.get_ui_manager()
-        manager.remove_ui(self._ui_merge_id)
-        manager.remove_action_group(self._actions)
-        manager.ensure_update()
-
     def do_activate(self):
-        self._add_ui()
+        action = Gio.SimpleAction(name="OpenSelection")
+        action.connect("activate", self.on_open_selection_activate)
+        self.window.add_action(action)
 
     def do_deactivate(self):
-        self._remove_ui()
+        self.window.remove_action("OpenSelection")
 
     def do_update_state(self):
         pass
